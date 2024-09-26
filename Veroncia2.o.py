@@ -2,11 +2,18 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk, ImageDraw, ImageOps
 
+
+# TAKE USER'S INPUT
+
 def submit_input():
     user_input = entry.get()
     display_label.config(text=f"You entered: {user_input}")
 
+
+# For Profile PIC
+
 def create_circular_image(image, size):
+
     # Create a circular mask
     mask = Image.new('L', size, 0)
     draw = ImageDraw.Draw(mask)
@@ -19,15 +26,24 @@ def create_circular_image(image, size):
     
     return circular_image
 
+
+# INPUT FOCUS ON
+
 def on_focus_in(event):
     if entry.get() == placeholder:
         entry.delete(0, tk.END)
     entry.config(fg='white' if dark_mode else 'black')
 
+
+# INPUT FOCUS OFF
+
 def on_focus_out(event):
     if entry.get() == '':
         entry.insert(0, placeholder)
         entry.config(fg='gray')
+
+
+# DARK MODE
 
 def toggle_dark_mode():
     global dark_mode
@@ -48,12 +64,14 @@ def toggle_dark_mode():
         #display_label.config(style='Light.TLabel')
         dark_mode_button.config(text="Dark")
 
-# Create the main window
+
+# CREATE MAIN WINDOW
+
 root = tk.Tk()
 root.title("Aurora's Calendar")
 
 # Load and resize the profile picture
-image_path = "Aurora_Profile_Pic.png"  # Replace with your image file path
+image_path = "DP.png"  # Replace with your image file path
 image = Image.open("DP.png")
 
 # Define the desired size
