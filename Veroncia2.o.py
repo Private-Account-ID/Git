@@ -1,172 +1,111 @@
-import webbrowser
-from time import strftime
-from pyttsx3 import init
-from speech_recognition import Microphone, Recognizer
-from wikipedia import set_lang, summary
-from pyjokes import get_joke
-from os import startfile, system
-from googletrans import Translator 
-from random import random
-from phonenumbers import PhoneNumberMatcher, format_number, PhoneNumberFormat, parse, is_valid_number, geocoder, carrier, timezone
-from playsound import playsound
-from requests import get
-from bs4 import BeautifulSoup
-from random import randint
+import tkinter as tk
+from tkinter import ttk
+from PIL import Image, ImageTk, ImageDraw, ImageOps
 
-engine, r = init('sapi5'), Recognizer()
-engine.setProperty('rate', 170)     # 0 to 200
-engine.setProperty('volume',1.0)    # setting up volume level  between 0 and 1
-engine.setProperty('voice', engine.getProperty('voices')[1].id)  # 0 for male 1 for female
+def submit_input():
+    user_input = entry.get()
+    display_label.config(text=f"You entered: {user_input}")
 
-def wishMe( H = int(strftime("%H")) ):    # Automatic Wishing function
-    if H >= 1 and H <= 12: return 'Good Morning Sir'
-    elif H > 12 and H < 21: return "Good Evening Sir"
-    else: return 'Good Night Sir'
+def create_circular_image(image, size):
+    # Create a circular mask
+    mask = Image.new('L', size, 0)
+    draw = ImageDraw.Draw(mask)
+    draw.ellipse((0, 0, size[0], size[1]), fill=255)
+    
+    # Apply the circular mask to the image
+    image = image.resize(size)
+    circular_image = ImageOps.fit(image, size, centering=(0.5, 0.5))
+    circular_image.putalpha(mask)
+    
+    return circular_image
 
+def on_focus_in(event):
+    if entry.get() == placeholder:
+        entry.delete(0, tk.END)
+    entry.config(fg='white' if dark_mode else 'black')
 
-# Function to play audio files
+def on_focus_out(event):
+    if entry.get() == '':
+        entry.insert(0, placeholder)
+        entry.config(fg='gray')
 
-def PlayAudio(txt):                    # Syntax: **** play music *****                    
-    List = [] # path of all the songs        
-    playsound(List[randint(1, len(List)+1)]) 
+def toggle_dark_mode():
+    global dark_mode
+    dark_mode = not dark_mode
+    
+    if dark_mode:
+        root.config(bg='black')
+        main_frame.config(style='Dark.TFrame')
+        profile_label.config(background='black')
+        entry.config(bg='black', fg='white', insertbackground='white')
+        dark_mode_button.config(text="Light")
+    else:
+        root.config(bg='white')
+        main_frame.config(style='Light.TFrame')
+        profile_label.config(background='white')
+        entry.config(bg='white', fg='black', insertbackground='black')
+        #submit_button.config(style='Light.TButton')
+        #display_label.config(style='Light.TLabel')
+        dark_mode_button.config(text="Dark")
 
-# Function to get information of any sim card number
-# Note: please say country code also
+# Create the main window
+root = tk.Tk()
+root.title("Aurora's Calendar")
 
-def Phonenumbers(txt):  # Syntax: Get me the number of +91 XXXXXXXXXX
-    for i in PhoneNumberMatcher(txt,None): n = format_number(i.number, PhoneNumberFormat.E164)
-    n = parse(n)
-    if is_valid_number(n) == False: return f"{n} is an invalid number."
-    return f"Sir, phone number {n} is of country {geocoder.description_for_number(n,'en')} using carrier {carrier.name_for_number(n,'en')} in timezone {timezone.time_zones_for_number(n)}"
+# Load and resize the profile picture
+image_path = "Aurora_Profile_Pic.png"  # Replace with your image file path
+image = Image.open("DP.png")
 
+# Define the desired size
+desired_size = (150, 150)  # Width, Height
+circular_image = create_circular_image(image, desired_size)
 
-# Common replace function for whole program
-def Replace(f,txt):                          
-    for i in f: txt = txt.replace(i,'',1)
-    return txt
+photo = ImageTk.PhotoImage(circular_image)
 
-# Function that needs replace()  should be below
+# Create a style for dark mode
+style = ttk.Style()
+style.configure('Dark.TFrame', background='black')
+style.configure('Dark.TButton', background='gray', foreground='white')
+style.configure('Dark.TLabel', foreground='white')
+style.configure('Light.TFrame', background='white')
+style.configure('Light.TButton', background='lightgray', foreground='black')
+style.configure('Light.TLabel', foreground='black')
 
+dark_mode = False  # Start in light mode
 
-# Function of Universal Translator
-# Note You can change source and destiny languare as per you needs
+# Create a frame for the profile picture and input
+main_frame = ttk.Frame(root, padding="10", style='Light.TFrame')
+main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-def Trans(txt):  # syntax: ******* meaning of **** in ****
-    txt = txt[txt.index('of')+3:]
-    if txt.endswith('in hindi'): return f"The meaning of {txt} is {Translator().translate(txt[:txt.index('in hindi')-1], dest='hi').pronunciation}"
-    else: return f"The meaning of {txt} is {Translator().translate(txt,src='hi', dest='en').text}"
+# Profile picture label with circular frame
+profile_label = ttk.Label(main_frame, image=photo, background='white')
+profile_label.grid(row=0, column=0, columnspan=2, pady=(0, 10))
 
+# Input bar
+placeholder = "Enter input here"
+entry = tk.Entry(main_frame, width=30, fg='gray', bg='white')
+entry.insert(0, placeholder)
+entry.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E))
 
-# Function to shut down, log off or restart
+# Bind focus events to handle placeholder text
+entry.bind("<FocusIn>", on_focus_in)
+entry.bind("<FocusOut>", on_focus_out)
+entry.bind("<Return>", submit_input)  # Bind Enter key to submit_input
 
-def Os(txt): # Syntax: shut or log off or restart
-    if 'shut' in txt: return 's'
-    elif 'log of' in txt: return 'l'
-    elif 'restart' in txt: return 'r'
+# Submit button
+submit_button = ttk.Button(main_frame, text="Submit", command=submit_input, style='Light.TButton')
+submit_button.grid(row=2, column=0, columnspan=2, pady=10)
 
+# Display label for the result
+display_label = ttk.Label(main_frame, text="", style='Light.TLabel')
+display_label.grid(row=3, column=0, columnspan=2, pady=(10, 0))
 
-# Function to search for google, picture, map, price, stock price, book or search any accound on twitter or instagram or open any website
-# Note: Some urls only works with bing search engine
+# Dark mode button
+dark_mode_button = ttk.Button(root, text="Dark", command=toggle_dark_mode)
+dark_mode_button.place(x=desired_size[0] + 5, y=5, width=45, height=30)  # Position the button over the image
 
-def Web(txt):  # Syntax: show me ****
-    x, txt1 = txt, txt[txt.index('of')+3:]
-    if "pic" in x: return f'https://www.bing.com/images/search?q={txt1}' # show me pic of *****
-    elif 'map' in x: return f'https://www.bing.com/maps?q={txt1}' # show me map ******
-    elif 'price' in x: return f'https://www.bing.com/shop?q={txt1}' # show me price # show me ****
-    elif 'book' in x: return f'https://www.google.com/search?q={txt1}&tbm=bks' # show me book ******
-    elif 'stock' in x: return f'https://www.google.com/finance/quote/{txt1}'   # show me stock *******
-    elif 'twitter' in x: return f'https://www.twitter.com/{txt1.replace(" ", "")}' # show me twitter account of ******
-    elif 'insta' in x: return f'https://www.instagram.com/{txt1.replace(" ", "")}' # show me insta account of ******
-    elif 'website' in x: return f'www.{txt1}' # show me ****
-
-
-# Function for Telling short news for wanted topic
-
-def News():  # Syntax : tell me some {topic} news
-    news = BeautifulSoup(get(f"https://inshorts.com/en/read/{txt.split()[-2].replace('some','')}").content,'html.parser').find_all(itemprop="headline")
-    for i in news: Say(f"\n- {i.get_text()}.")
-
-
-# Function to extracting information from wikipedia with languare option
-
-def Wikipedia(txt,sen = 2): # Syntax: ****** in wikipedia
-    if 'in hindi'in txt:set_lang("hi")                               # change 2nd language from here
-    if 'in brief' in txt: sen = 8
-    txt = txt[:txt.index(' in wikipedia')]
-    Say('searching.....',txt)
-    return summary(txt.replace(' ', ''), sentences=sen)
-
-def Say(txt):
-    print(f'Jarvis:{txt}')
-    engine.say(txt)
-    engine.runAndWait()
-    engine.stop()
-
-
-# Function to read and write files
-
-def Open(txt):        
-    if txt.startswith('read'):  # Syntax : read **** file
-        with open(f"C:\\Users\\abc\Documents\\text\\{txt.split()[-1]}.txt") as f:
-            Say(f"Reading.....\n{f.read()}")
-            f.close()
-    else:                       # Syntax : write *** file
-        with open(f"C:\\Users\\abc\Documents\\text\\{txt.split()[2]}.txt",'a+') as f:
-            f.write(f'{txt[10:]}\n')
-            Say('Done Sir')
-            f.close()
-
-# Main Function
-
-def takeCommand(): # Syntax: *** Jarvis *****
-    Say('Yes sir')
-    with Microphone() as source: 
-        r.adjust_for_ambient_noise(source,duration=0.2)
-        print('Jarvis: listening.....')
-        audio = r.listen(source)
-        print('Jarvis: Recognizing.....')
-        txt = r.recognize_google(audio, language='en-in').lower()
-        box = txt.split();print(f'You said{txt}')
-        
-        try:
-            if 'tell me a joke' in txt: Say(get_joke())
-            elif txt.startswith('search') : from pyKit import Search; Search(txt.replace("search", '', 1)) # Syntax: search ******
-            elif txt.startswith('take') and txt.endswith("screenshot") : from Pyautogui import Shot; startfile(Shot()) # Syntax: take **** screenshot
-            elif 'in wikipedia' in txt: Say(Wikipedia(txt))  
-            elif txt.startswith('show me'): webbrowser.open(Web(txt))
-            elif txt.endswith('news') and 'tell' in txt: News(txt)  # Syntax: tell ********* {topic or some} news
-            elif txt.startswith('start') : from pyautogui import Start; Start(txt)
-            elif txt.startswith("shut") or txt.startswith('log of') or txt.endswith('restart'): system(f'shutdown /{Os(txt)} /t 0')
-            elif txt.startswith('play') and txt.endswith('youtube'): Play(txt[txt.index('play')+5:-10]) # Syntax: play **** on youtube
-            elif txt.startswith('what'):
-                if 'day' in txt or 'date' in txt: Say(strftime("%A, %d %B %Y"))
-                elif 'txt' in txt: Say(strftime("%H:%M:%S"))
-            elif txt.startswith('read pdf'): from PyPdf import Read; Read(txt) # Syntax: read pdf
-            elif txt.startswith('write') and box[1] != 'file': from PyKit import HandWrite; startfile(HandWrite(txt)) # Syntax: handwrite *******
-            elif box[1]=="file": Open(txt)
-            elif 'mean' in txt and 'of' in txt: Say(Trans(txt))
-            elif txt.startswith("say") or box[0]=="se": Say(Replace(('say', 'se'), txt))                            # try it to get get down only
-            elif txt.startswith('get') and txt.endswith('number'): Say(Phonenumbers(txt))
-            elif txt.startswith('convert') and txt.endswith('art'): from PyKit import ImgToArt; Open(ImgToArt()) # Syntax: convert **** art
-
-            
-# Function to control Arduino modules
-# Note: Setup arduino for Ultrasonic sersor module and pyfirmata, Pymata4 lib  (You can search this for on youtube)
-
-            elif txt.endswith('distance') and 'measure' in txt: import UltrasonicSensor
-            elif 'turn' in txt and 'led' in txt: Say(Led(txt)); from pyfirmata import Led
-            elif 'servo' in txt and txt.endswith('degree'): from pyfirmata import MoveServo; Say(MoveServo(txt.split()))
-        except Exception as e: print(e)
+# Run the main loop
+root.mainloop()
 
 
-# To enter in Main function Say Jarvis
-if __name__ == '__main__':
-    Say(wishMe())
-    while 1:
-        with Microphone() as source: 
-            print('listening.....')
-            audio   = r.listen(source)
-            print('Recognizing.....')
-            try: 
-                if 'Veronica' in r.recognize_google(audio, language='en-in'): takeCommand()
-            except Exception: pass
+
